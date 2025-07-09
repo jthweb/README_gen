@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub README Generator</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='currentColor' d='M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z'/%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .mode-card.active {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4);
+        }
+        .mode-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .mode-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        /* Loading Animation */
+        .loader {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 5px solid #e5e7eb;
+            border-top-color: #4f46e5;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Entry Animations */
+        @keyframes fade-in-down {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-down { animation: fade-in-down 0.8s ease-out forwards; }
+        .animate-fade-in-up { animation: fade-in-up 0.8s ease-out forwards; }
+        
+        /* Preview Styles */
+        #readme-preview-content h1, #readme-preview-content h2, #readme-preview-content h3 { font-weight: bold; margin-top: 1rem; margin-bottom: 0.5rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.25rem; }
+        #readme-preview-content h1 { font-size: 2rem; }
+        #readme-preview-content h2 { font-size: 1.75rem; }
+        #readme-preview-content h3 { font-size: 1.5rem; }
+        #readme-preview-content a { color: #3b82f6; text-decoration: none; }
+        #readme-preview-content a:hover { text-decoration: underline; }
+        #readme-preview-content ul { list-style-type: disc; margin-left: 1.5rem; }
+        #readme-preview-content img { max-width: 100%; height: auto; margin-top: 0.5rem; margin-bottom: 0.5rem; border-radius: 0.5rem; }
+        #readme-preview-content pre { background-color: #1f2937; color: white; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+        #readme-preview-content code { font-family: monospace; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto px-4 py-8 min-h-screen flex flex-col">
+        <header class="text-center mb-12 animate-fade-in-down">
+            <h1 class="text-5xl font-bold text-gray-900">GitHub README Generator</h1>
+            <p class="text-xl text-gray-600 mt-3">Create a stunning README for your GitHub profile in seconds.</p>
+        </header>
+
+        <!-- Login Section -->
+        <div id="login-section" class="text-center animate-fade-in-up" style="animation-delay: 0.2s;">
+            <button id="login-btn" class="bg-gray-800 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-900 transition duration-300 ease-in-out shadow-lg inline-flex items-center">
+                <svg class="h-6 w-6 mr-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.168 6.839 9.492.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.848-2.338 4.695-4.566 4.942.359.308.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" />
+                </svg>
+                Login with GitHub
+            </button>
+        </div>
+
+        <!-- Loading Animation Section -->
+        <div id="loading-section" class="hidden flex-col items-center justify-center space-y-4 my-16">
+            <div class="loader"></div>
+            <p id="loading-text" class="text-lg text-gray-600">Fetching your GitHub data...</p>
+        </div>
+
+        <!-- Main App Section -->
+        <main id="app-section" class="hidden flex-grow">
+            <div class="flex justify-center items-center mb-8" id="user-info"></div>
+            
+            <div class="mb-8">
+                <h2 class="text-2xl font-semibold text-center mb-4">Choose a README Style</h2>
+                <div class="flex justify-center gap-4 md:gap-8 flex-wrap">
+                    <div id="mode-simple" class="mode-card active cursor-pointer p-6 bg-white rounded-lg shadow-md border-2 border-transparent w-full md:w-1/4 text-center">
+                        <h3 class="text-xl font-bold mb-2">Simple</h3>
+                    </div>
+                    <div id="mode-professional" class="mode-card cursor-pointer p-6 bg-white rounded-lg shadow-md border-2 border-transparent w-full md:w-1/4 text-center">
+                        <h3 class="text-xl font-bold mb-2">Professional</h3>
+                    </div>
+                    <div id="mode-fun" class="mode-card cursor-pointer p-6 bg-white rounded-lg shadow-md border-2 border-transparent w-full md:w-1/4 text-center">
+                        <h3 class="text-xl font-bold mb-2">Fun</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-2xl font-semibold">Markdown Code</h2>
+                        <div>
+                             <button id="copy-btn" class="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300 mr-2">Copy</button>
+                             <button id="download-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">Download .md</button>
+                        </div>
+                    </div>
+                    <textarea id="readme-output" class="w-full h-96 p-4 bg-gray-900 text-white font-mono rounded-lg shadow-inner border-2 border-gray-700 focus:border-indigo-500 outline-none" placeholder="Your README markdown will appear here..."></textarea>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-semibold mb-2">Live Preview</h2>
+                    <div id="readme-preview" class="bg-white p-6 rounded-lg shadow-md h-96 overflow-y-auto border-2 border-gray-200">
+                        <div id="readme-preview-content"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="text-center mt-12 py-4 text-gray-500">
+            <a href="https://github.com/jthweb" target="_blank" rel="noopener noreferrer" class="inline-flex items-center hover:text-gray-800 transition">
+                Made by jthweb 
+                <svg class="h-5 w-5 ml-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.168 6.839 9.492.5.092.682-.217.682-.482 0-.237-.009-.868-.014-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.378.203 2.398.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.848-2.338 4.695-4.566 4.942.359.308.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" />
+                </svg>
+            </a>
+        </footer>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const loginSection = document.getElementById('login-section');
+        const loadingSection = document.getElementById('loading-section');
+        const loadingText = document.getElementById('loading-text');
+        const appSection = document.getElementById('app-section');
+        const loginBtn = document.getElementById('login-btn');
+        const userInfoDiv = document.getElementById('user-info');
+        const copyBtn = document.getElementById('copy-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const readmeOutput = document.getElementById('readme-output');
+        const readmePreviewContent = document.getElementById('readme-preview-content');
+        const modeSimple = document.getElementById('mode-simple');
+        const modeProfessional = document.getElementById('mode-professional');
+        const modeFun = document.getElementById('mode-fun');
+        const modeCards = document.querySelectorAll('.mode-card');
+
+        // --- GitHub OAuth Configuration ---
+        // IMPORTANT: Replace this with your actual Client ID from your GitHub OAuth App.
+        const githubClientId = 'Ov23liUC5JKPgJQy9hFg'; 
+        const redirectUri = window.location.href.split('?')[0];
+
+        // This is a placeholder for a serverless function or proxy that you must set up.
+        // It's needed to securely exchange the code for an access token without exposing your Client Secret.
+        // Example services: Vercel Functions, Netlify Functions, or a simple CORS proxy.
+        const tokenProxyUrl = 'YOUR_PROXY_SERVER_URL'; // e.g., 'https://your-proxy.vercel.app/api/auth'
+
+        let userData = null;
+        let accessToken = null;
+        let currentMode = 'simple';
+        const markdownConverter = new showdown.Converter({
+            ghCompatibleHeaderId: true,
+            simpleLineBreaks: true,
+            ghMentions: true,
+            tables: true,
+        });
+
+        // --- Event Listeners ---
+        loginBtn.addEventListener('click', () => {
+            window.location.href = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=read:user,public_repo&redirect_uri=${redirectUri}`;
+        });
+
+        modeSimple.addEventListener('click', () => setMode('simple'));
+        modeProfessional.addEventListener('click', () => setMode('professional'));
+        modeFun.addEventListener('click', () => setMode('fun'));
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(readmeOutput.value).then(() => {
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+            });
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const blob = new Blob([readmeOutput.value], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'README.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+        
+        readmeOutput.addEventListener('input', () => renderPreview());
+
+        // --- Functions ---
+        window.onload = async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+
+            if (code) {
+                loginSection.classList.add('hidden');
+                loadingSection.classList.remove('hidden');
+                loadingSection.classList.add('flex');
+                window.history.replaceState({}, document.title, redirectUri);
+                
+                try {
+                    await getAccessToken(code);
+                    await getUserData();
+                    if (userData) {
+                        loadingSection.classList.add('hidden');
+                        loadingSection.classList.remove('flex');
+                        showAppView();
+                        displayUserInfo();
+                        generateReadme();
+                    }
+                } catch (error) {
+                    loadingText.textContent = `Error: ${error.message}. Please try again.`;
+                    console.error("OAuth Error:", error);
+                }
+            }
+        };
+
+        async function getAccessToken(code) {
+            if (tokenProxyUrl === 'YOUR_PROXY_SERVER_URL') {
+                throw new Error("Proxy server URL is not configured.");
+            }
+            loadingText.textContent = 'Authenticating...';
+            const response = await fetch(tokenProxyUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to get access token from proxy.');
+            }
+            const data = await response.json();
+            if (data.error || !data.access_token) {
+                throw new Error(data.error_description || 'Token not found in proxy response.');
+            }
+            accessToken = data.access_token;
+        }
+
+
+        async function getUserData() {
+            if (!accessToken) {
+                throw new Error("Not authenticated.");
+            }
+            loadingText.textContent = 'Fetching user profile...';
+            // Fetch basic user data
+            const userResponse = await fetch('https://api.github.com/user', {
+                headers: { Authorization: `token ${accessToken}` }
+            });
+            if (!userResponse.ok) throw new Error('Failed to fetch user data.');
+            const user = await userResponse.json();
+
+            loadingText.textContent = 'Fetching repositories...';
+            // Fetch user's repositories to calculate languages and find top repos
+            const reposResponse = await fetch(user.repos_url, {
+                headers: { Authorization: `token ${accessToken}` }
+            });
+            if (!reposResponse.ok) throw new Error('Failed to fetch repositories.');
+            const repos = await reposResponse.json();
+
+            // Calculate language usage
+            const langStats = repos.reduce((stats, repo) => {
+                if (repo.language) {
+                    stats[repo.language] = (stats[repo.language] || 0) + 1;
+                }
+                return stats;
+            }, {});
+            const languages = Object.keys(langStats).sort((a, b) => langStats[b] - langStats[a]);
+
+            // Find top 4 starred repos
+            const top_repos = repos
+                .sort((a, b) => b.stargazers_count - a.stargazers_count)
+                .slice(0, 4);
+
+            userData = {
+                login: user.login,
+                name: user.name || user.login,
+                avatar_url: user.avatar_url,
+                bio: user.bio || '',
+                html_url: user.html_url,
+                twitter_username: user.twitter_username,
+                linkedin_username: null, // GitHub API doesn't provide this, user must add manually
+                languages: languages,
+                top_repos: top_repos
+            };
+        }
+
+        function showAppView() {
+            appSection.classList.remove('hidden');
+            appSection.classList.add('animate-fade-in-up');
+        }
+
+        function displayUserInfo() {
+            userInfoDiv.innerHTML = `
+                <img src="${userData.avatar_url}" alt="User Avatar" class="w-24 h-24 rounded-full mr-4 border-4 border-indigo-500 shadow-lg">
+                <div>
+                    <h2 class="text-3xl font-bold">${userData.name}</h2>
+                    <p class="text-gray-600">@${userData.login}</p>
+                </div>
+            `;
+        }
+        
+        function setMode(mode) {
+            currentMode = mode;
+            modeCards.forEach(card => card.classList.remove('active'));
+            document.getElementById(`mode-${mode}`).classList.add('active');
+            generateReadme();
+        }
+
+        function renderPreview() {
+            const markdownText = readmeOutput.value;
+            readmePreviewContent.innerHTML = markdownConverter.makeHtml(markdownText);
+        }
+
+        function generateReadme() {
+            if (!userData) return;
+
+            let readmeContent = '';
+            const { login, name, bio, html_url, languages, twitter_username, linkedin_username, top_repos } = userData;
+            
+            // --- Reusable Components ---
+            const profileViews = `![Profile Views](https://komarev.com/ghpvc/?username=${login}&color=blueviolet&style=flat-square)`;
+            const githubStats = `![${name}'s GitHub stats](https://github-readme-stats.vercel.app/api?username=${login}&show_icons=true&theme=radical&hide_border=true&rank_icon=github)`;
+            const topLangs = `![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=${login}&layout=compact&theme=vision-friendly-dark&hide_border=true)`;
+            
+            let connectLinks = [];
+            if (twitter_username) {
+                connectLinks.push(`[<img src='https://img.shields.io/badge/twitter-%231DA1F2.svg?&style=for-the-badge&logo=twitter&logoColor=white' alt='twitter' />](https://twitter.com/${twitter_username})`);
+            }
+            if (linkedin_username) { // User would have to add this manually for now
+                connectLinks.push(`[<img src='https://img.shields.io/badge/linkedin-%230077B5.svg?&style=for-the-badge&logo=linkedin&logoColor=white' alt='linkedin' />](https://www.linkedin.com/in/${linkedin_username})`);
+            }
+            const connectSection = connectLinks.length > 0 ? `### 🤝 Let's Connect\n\n${connectLinks.join('\n')}` : `<!-- To add social links, update the connectLinks array in the script! -->`;
+
+            const topReposSection = top_repos.length > 0 ? `### ⭐ My Top Repositories\n\n` + 
+                top_repos.map(repo => 
+                    `[![ReadMe Card](https://github-readme-stats.vercel.app/api/pin/?username=${login}&repo=${repo.name}&theme=dark&show_owner=true)](${repo.html_url})`
+                ).join('\n') : '';
+
+
+            switch (currentMode) {
+                case 'simple':
+                    readmeContent = `
+# Hi there, I'm ${name} 👋
+
+*${bio || 'I am a passionate developer building things for the web.'}*
+
+- 🔭 I’m currently working on something exciting!
+- 🌱 I’m currently learning ${languages[0] || 'new technologies'}.
+- 📫 How to reach me: [GitHub](https://github.com/${login})
+
+${profileViews}
+
+---
+
+### 💻 Languages and Tools:
+${languages.slice(0, 10).map(lang => `![${lang}](https://img.shields.io/badge/${encodeURIComponent(lang)}-black?style=for-the-badge&logo=${encodeURIComponent(lang.toLowerCase().replace(/ /g, ''))}&logoColor=white)`).join(' ')}
+                    `;
+                    break;
+
+                case 'professional':
+                    readmeContent = `
+# ${name}
+*${bio || 'A developer focused on creating meaningful and efficient solutions.'}*
+
+${connectSection}
+
+---
+
+### 📊 My GitHub Stats
+<p align="center">
+  <a href="https://github.com/${login}">
+    ${githubStats}
+  </a>
+  <a href="https://github.com/${login}">
+    ${topLangs}
+  </a>
+</p>
+
+---
+
+${topReposSection}
+
+---
+
+### 🛠️ My Tech Stack
+${languages.slice(0, 12).map(lang => `<img src="https://img.shields.io/badge/${encodeURIComponent(lang)}-23272f?style=for-the-badge&logo=${encodeURIComponent(lang.toLowerCase().replace(/ /g, ''))}" alt="${lang}" height="25"/>`).join(' ')}
+                    `;
+                    break;
+
+                case 'fun':
+                    readmeContent = `
+<h1 align="center">Hi there, I'm ${name} <img src="https://media.giphy.com/media/hvRJCLFzcasrR4ia7z/giphy.gif" width="35"></h1>
+
+<p align="center">
+  <em>${bio || 'Just a curious coder exploring the universe of technology.'}</em>
+</p>
+
+<p align="center">
+  ${profileViews}
+</p>
+
+${connectSection.replace('###', '<h3 align="center">')}
+
+---
+
+### ✨ A Little More About Me
+- 🚀 I’m currently working on turning coffee into code.
+- 👯 I’m looking to collaborate on anything open-source.
+- ⚡ Fun fact: The best part of my code is the comments.
+
+---
+
+### 📈 My Stats & Top Languages
+<p align="center">
+    ${githubStats}
+    ${topLangs}
+</p>
+
+---
+
+${topReposSection}
+                    `;
+                    break;
+            }
+
+            readmeOutput.value = readmeContent.trim();
+            renderPreview();
+        }
+    </script>
+</body>
+</html>
