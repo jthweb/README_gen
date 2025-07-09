@@ -154,14 +154,10 @@
         const modeCards = document.querySelectorAll('.mode-card');
 
         // --- GitHub OAuth Configuration ---
-        // IMPORTANT: Replace this with your actual Client ID from your GitHub OAuth App.
         const githubClientId = 'Ov23liUC5JKPgJQy9hFg'; 
-        const redirectUri = window.location.href.split('?')[0];
-
-        // This is a placeholder for a serverless function or proxy that you must set up.
-        // It's needed to securely exchange the code for an access token without exposing your Client Secret.
-        // Example services: Vercel Functions, Netlify Functions, or a simple CORS proxy.
-        const tokenProxyUrl = 'YOUR_PROXY_SERVER_URL'; // e.g., 'https://your-proxy.vercel.app/api/auth'
+        // The redirectUri now points to our new callback page
+        // Ensure this URL is registered in your GitHub OAuth App settings!
+        const redirectUri = window.location.href.replace(/index\.html$|$/, 'callback.html');
 
         let userData = null;
         let accessToken = null;
@@ -175,6 +171,8 @@
 
         // --- Event Listeners ---
         loginBtn.addEventListener('click', () => {
+            // Clear any old token before starting a new login
+            sessionStorage.removeItem('github_access_token');
             window.location.href = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=read:user,public_repo&redirect_uri=${redirectUri}`;
         });
 
@@ -183,11 +181,19 @@
         modeFun.addEventListener('click', () => setMode('fun'));
 
         copyBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(readmeOutput.value).then(() => {
-                copyBtn.textContent = 'Copied!';
-                setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
-            });
+            document.execCommand('copy'); // Use document.execCommand for clipboard in iframe
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
         });
+
+        // Event listener for copying text to clipboard
+        readmeOutput.addEventListener('copy', (event) => {
+            event.preventDefault(); // Prevent default copy behavior
+            if (event.clipboardData) {
+                event.clipboardData.setData('text/plain', readmeOutput.value);
+            }
+        });
+
 
         downloadBtn.addEventListener('click', () => {
             const blob = new Blob([readmeOutput.value], { type: 'text/markdown' });
@@ -205,17 +211,15 @@
 
         // --- Functions ---
         window.onload = async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
+            // Check for an access token in sessionStorage which is set by callback.html
+            accessToken = sessionStorage.getItem('github_access_token');
 
-            if (code) {
+            if (accessToken) {
                 loginSection.classList.add('hidden');
                 loadingSection.classList.remove('hidden');
                 loadingSection.classList.add('flex');
-                window.history.replaceState({}, document.title, redirectUri);
                 
                 try {
-                    await getAccessToken(code);
                     await getUserData();
                     if (userData) {
                         loadingSection.classList.add('hidden');
@@ -226,54 +230,34 @@
                     }
                 } catch (error) {
                     loadingText.textContent = `Error: ${error.message}. Please try again.`;
-                    console.error("OAuth Error:", error);
+                    console.error("Data Fetching Error:", error);
+                    // If token is invalid, clear it and show login button
+                    sessionStorage.removeItem('github_access_token');
+                    loadingSection.classList.add('hidden');
+                    loginSection.classList.remove('hidden');
                 }
             }
+            // If no token, the page will just display the login button by default.
         };
-
-        async function getAccessToken(code) {
-            if (tokenProxyUrl === 'YOUR_PROXY_SERVER_URL') {
-                throw new Error("Proxy server URL is not configured.");
-            }
-            loadingText.textContent = 'Authenticating...';
-            const response = await fetch(tokenProxyUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: code }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to get access token from proxy.');
-            }
-            const data = await response.json();
-            if (data.error || !data.access_token) {
-                throw new Error(data.error_description || 'Token not found in proxy response.');
-            }
-            accessToken = data.access_token;
-        }
-
 
         async function getUserData() {
             if (!accessToken) {
-                throw new Error("Not authenticated.");
+                throw new Error("Not authenticated. Please log in again.");
             }
             loadingText.textContent = 'Fetching user profile...';
-            // Fetch basic user data
             const userResponse = await fetch('https://api.github.com/user', {
                 headers: { Authorization: `token ${accessToken}` }
             });
-            if (!userResponse.ok) throw new Error('Failed to fetch user data.');
+            if (!userResponse.ok) throw new Error('Failed to fetch user data. Your token might be expired.');
             const user = await userResponse.json();
 
             loadingText.textContent = 'Fetching repositories...';
-            // Fetch user's repositories to calculate languages and find top repos
             const reposResponse = await fetch(user.repos_url, {
                 headers: { Authorization: `token ${accessToken}` }
             });
             if (!reposResponse.ok) throw new Error('Failed to fetch repositories.');
             const repos = await reposResponse.json();
 
-            // Calculate language usage
             const langStats = repos.reduce((stats, repo) => {
                 if (repo.language) {
                     stats[repo.language] = (stats[repo.language] || 0) + 1;
@@ -282,7 +266,6 @@
             }, {});
             const languages = Object.keys(langStats).sort((a, b) => langStats[b] - langStats[a]);
 
-            // Find top 4 starred repos
             const top_repos = repos
                 .sort((a, b) => b.stargazers_count - a.stargazers_count)
                 .slice(0, 4);
@@ -294,7 +277,7 @@
                 bio: user.bio || '',
                 html_url: user.html_url,
                 twitter_username: user.twitter_username,
-                linkedin_username: null, // GitHub API doesn't provide this, user must add manually
+                linkedin_username: null, 
                 languages: languages,
                 top_repos: top_repos
             };
@@ -333,7 +316,6 @@
             let readmeContent = '';
             const { login, name, bio, html_url, languages, twitter_username, linkedin_username, top_repos } = userData;
             
-            // --- Reusable Components ---
             const profileViews = `![Profile Views](https://komarev.com/ghpvc/?username=${login}&color=blueviolet&style=flat-square)`;
             const githubStats = `![${name}'s GitHub stats](https://github-readme-stats.vercel.app/api?username=${login}&show_icons=true&theme=radical&hide_border=true&rank_icon=github)`;
             const topLangs = `![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=${login}&layout=compact&theme=vision-friendly-dark&hide_border=true)`;
@@ -342,7 +324,7 @@
             if (twitter_username) {
                 connectLinks.push(`[<img src='https://img.shields.io/badge/twitter-%231DA1F2.svg?&style=for-the-badge&logo=twitter&logoColor=white' alt='twitter' />](https://twitter.com/${twitter_username})`);
             }
-            if (linkedin_username) { // User would have to add this manually for now
+            if (linkedin_username) {
                 connectLinks.push(`[<img src='https://img.shields.io/badge/linkedin-%230077B5.svg?&style=for-the-badge&logo=linkedin&logoColor=white' alt='linkedin' />](https://www.linkedin.com/in/${linkedin_username})`);
             }
             const connectSection = connectLinks.length > 0 ? `### 🤝 Let's Connect\n\n${connectLinks.join('\n')}` : `<!-- To add social links, update the connectLinks array in the script! -->`;
@@ -351,7 +333,6 @@
                 top_repos.map(repo => 
                     `[![ReadMe Card](https://github-readme-stats.vercel.app/api/pin/?username=${login}&repo=${repo.name}&theme=dark&show_owner=true)](${repo.html_url})`
                 ).join('\n') : '';
-
 
             switch (currentMode) {
                 case 'simple':
@@ -384,12 +365,12 @@ ${connectSection}
 
 ### 📊 My GitHub Stats
 <p align="center">
-  <a href="https://github.com/${login}">
+    <a href="https://github.com/${login}">
     ${githubStats}
-  </a>
-  <a href="https://github.com/${login}">
+    </a>
+    <a href="https://github.com/${login}">
     ${topLangs}
-  </a>
+    </a>
 </p>
 
 ---
@@ -408,11 +389,11 @@ ${languages.slice(0, 12).map(lang => `<img src="https://img.shields.io/badge/${e
 <h1 align="center">Hi there, I'm ${name} <img src="https://media.giphy.com/media/hvRJCLFzcasrR4ia7z/giphy.gif" width="35"></h1>
 
 <p align="center">
-  <em>${bio || 'Just a curious coder exploring the universe of technology.'}</em>
+    <em>${bio || 'Just a curious coder exploring the universe of technology.'}</em>
 </p>
 
 <p align="center">
-  ${profileViews}
+    ${profileViews}
 </p>
 
 ${connectSection.replace('###', '<h3 align="center">')}
